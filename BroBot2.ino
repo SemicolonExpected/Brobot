@@ -30,7 +30,7 @@ void backLeft(){
 
 //int stepCount = 0;
 void goStraight(){
-  for(int i = 0; i<20; i++)
+  for(int i = 0; i<10; i++)
   {
     mLeft->step(25,FORWARD,DOUBLE);
     mRight->step(25,BACKWARD,DOUBLE);
@@ -47,7 +47,7 @@ void backRight(){
 }
 
 void goBack(){
-  for(int i = 0; i<20; i++)
+  for(int i = 0; i<10; i++)
   {
     mLeft->step(25,BACKWARD,DOUBLE);
     mRight->step(25,FORWARD,DOUBLE);
@@ -56,7 +56,22 @@ void goBack(){
   }
 }
 //int time = micros();
-
+void backitUp(){
+  if(node->back == NULL){
+       //no way to back up anymore
+  }
+  else if(node->back->forward == node)
+    goBack();
+  else if(node->back->left == node){
+    backLeft();
+    goBack();
+  }
+  else{
+    backRight();
+    goBack();
+  }
+  node = node->back;
+}
 //int cliffTime;
 int avgTime;
 int times[3];
@@ -221,20 +236,7 @@ void loop() {
         node->ifVisited = true;
        }       
        else{
-         if(node->back == NULL){
-           //no way to back up anymore
-         }
-         else if(node->back->forward == node)
-           goBack();
-         else if(node->back->left == node){
-         backLeft();
-         goBack();
-       }
-       else{
-         backRight();
-         goBack();
-       }
-       node = node->back;
+         backitUp();
        }
      }
    }
@@ -252,20 +254,7 @@ void loop() {
        node->ifVisited = true;
      }       
      else{
-       if(node->back == NULL){
-           //no way to back up anymore
-       }
-       else if(node->back->forward == node)
-         goBack();
-       else if(node->back->left == node){
-         backLeft();
-         goBack();
-       }
-       else{
-         backRight();
-         goBack();
-       }
-       node = node->back;
+       backitUp();
      }
    }
    
@@ -277,41 +266,14 @@ void loop() {
       node->ifVisited = true;
      }
      else{
-       if(node->back == NULL){
-           //no way to back up anymore
-       }
-       else if(node->back->forward == node)
-         goBack();
-       else if(node->back->left == node){
-         backLeft();
-         goBack();
-       }
-       else{
-         backRight();
-         goBack();
-       }
-       node = node->back;
-     }
+       backitUp();
    }
    else{
      /*****************************************
      What do we do when there is nowhere to go?
      Check the way you came from then go back!
      ******************************************/
-       if(node->back == NULL){
-           //no way to back up anymore
-       }
-       else if(node->back->forward == node)
-         goBack();
-       else if(node->back->left == node){
-         backLeft();
-         goBack();
-       }
-       else{
-         backRight();
-         goBack();
-       }
-       node = node->back;
+       backitUp();
    }
    
    /*********************************************************

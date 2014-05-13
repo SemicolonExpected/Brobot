@@ -16,11 +16,11 @@ public:
     TTree *left;
 	TTree *right;
 	
-	int numsteps;
+	//int numsteps;
 	bool ifVisited;
 	//bool ifExpended;
 
-	void insert(int steps, int direction);
+	void insert(/*int steps,*/ int direction);
 
 /*private:
 	TTree *root */
@@ -35,7 +35,7 @@ TTree::TTree(){
 	this->left = NULL;
 	this->right = NULL;
 
-	this->numsteps = 0;
+	//this->numsteps = 0;
 	//first TTree ie the node will be = 0
 
         this->ifVisited = false;
@@ -47,11 +47,11 @@ TTree::TTree(){
  a new node, then create one, else it does
  nothing as there is already a node.
 **********************************************/
-void TTree::insert(int steps, int direction){
+void TTree::insert(/*int steps,*/ int direction){
 	if(direction == 0){
 		if(this->left != NULL){
 			this->left = new TTree();
-			this->left->numsteps = steps;
+			//this->left->numsteps = steps;
 			this->left->back = this;
 			this->left->forward = NULL;
 			this->left->left = NULL;
@@ -61,7 +61,7 @@ void TTree::insert(int steps, int direction){
 	if(direction == 1){
 		if(this->forward != NULL){
 			this->forward = new TTree();
-			this->forward->numsteps = steps;
+			//this->forward->numsteps = steps;
 			this->forward->back = this;
 			this->forward->forward = NULL;
 			this->forward->left = NULL;
@@ -71,7 +71,7 @@ void TTree::insert(int steps, int direction){
 	if(direction == 2){
 		if(this->right != NULL){
 			this->right = new TTree();
-			this->right->numsteps = steps;
+			//this->right->numsteps = steps;
 			this->right->back = this;
 			this->right->forward = NULL;
 			this->right->left = NULL;

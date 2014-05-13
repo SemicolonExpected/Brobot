@@ -4,8 +4,6 @@
 #include <AccelStepper.h> //for moving both at once
 #include <TTree.h>
 
-#define IRpin_PIN1 PIND 
-
 #define IRpin1 A1
 #define IRpin2 A0
 
@@ -14,7 +12,6 @@
 #define FrontPin 4  
 #define LeftPin 4   
 
-#define RESOLUTION 20
 
 Adafruit_MotorShield AFMS = Adafruit_MotorShield(); 
 //^ create motorshield object
@@ -31,22 +28,22 @@ void backLeft(){
   mLeft->step(225,BACKWARD,DOUBLE);
 }
 
-int stepCount = 0;
+//int stepCount = 0;
 void goStraight(){
   for(int i = 0; i<20; i++)
   {
     mLeft->step(25,FORWARD,DOUBLE);
     mRight->step(25,BACKWARD,DOUBLE);
-    stepCount+=25;
-    Serial.println(stepCount);
+    //stepCount+=25;
+    //Serial.println(stepCount);
   }
 }
 
 void turnRight(){
-   mRight->step(250,BACKWARD,DOUBLE);
+   mRight->step(225,BACKWARD,DOUBLE);
 }
 void backRight(){
-   mRight->step(250,FORWARD,DOUBLE);
+   mRight->step(225,FORWARD,DOUBLE);
 }
 
 void goBack(){
@@ -54,42 +51,33 @@ void goBack(){
   {
     mLeft->step(25,BACKWARD,DOUBLE);
     mRight->step(25,FORWARD,DOUBLE);
-    stepCount -= 25;
-    Serial.println(stepCount);
+    //stepCount -= 25;
+    //Serial.println(stepCount);
   }
 }
-int time = micros();
+//int time = micros();
 
-int cliffTime;
+//int cliffTime;
 int avgTime;
 int times[3];
 
 int readCliff(){
   tone(2,38000,1000);
-  int tempTime = micros();
-   while((!digitalRead(IRpin2))&& (micros()-tempTime <= 3000)){ 
+  //int tempTime = micros();
+   //while((!digitalRead(IRpin2))&& (micros()-tempTime <= 3000)){ 
     /*this should only do something (well in this case nothing)
       when it doesnt get a signal*/
     //do nothing
-   }
-  return (micros() - tempTime);
+   //}
+  return (analogRead(A2));
 }
 
-int timeTaken(){
-  int tempTime = micros();
-  while((!digitalRead(IRpin1))&&(micros()-tempTime <= 3000)){ 
-    /*this should only do something (well in this case nothing)
-      when it doesnt get a signal*/
-    //do nothing
-  }
-  return (micros() - tempTime);
-}
-
-int irBounce(int pinNo) //1 means something in the way; 0 means no
+int irBounce(int pinNo) 
 {
-  tone(pinNo, 38000, 1000);
+  tone(pinNo, 38000, 1);
   //interpret the signal
-  return timeTaken(); //time it took for IR to hit something and bounce back if it bounced back
+  delay(1);
+  return (analogRead(A2)); //the higher this number is, the closer the object.
 }
 
 void setup() {
@@ -127,13 +115,14 @@ void setup() {
    will have reached a checkpoint. Generally it would be num
    of steps its body size is.
    **********************************************************/
-   cliffTime = readCliff();
+   //cliffTime = readCliff();
    
    int timeSum = 0;
    uint8_t maxi = 0; 
    for(int i = 3; i <6; i++)
    {
      times[i-3] = irBounce(i);
+     Serial.println(times[i-3]);
      if(times[i-3] > times[maxi])
        maxi = i-3;
      timeSum += times[i-3];
@@ -150,14 +139,14 @@ void setup() {
     Arduino IDE should have line highlighting so I can comeback here when
     I figure out a better way to determine what is a wall and what is not.
     **********************************************************************/
-   if(times[0] > avgTime){
+   if(times[0] < avgTime){
      turnLeft();
      goStraight(); 
    }
-   if(times[1] > avgTime){
+   if(times[1] < avgTime){
      goStraight(); 
    }
-   if(times[2] > avgTime){
+   if(times[2] < avgTime){
      turnRight();
      goStraight(); 
    }
@@ -194,8 +183,8 @@ void loop() {
    for(int i = 3; i <6; i++)
    {
      times[i-3] = irBounce(i);
-     if(times[i] > avgTime)
-       node->insert(stepCount,i);
+     if(times[i] < avgTime)
+       node->insert(i);
        /*****************************
        Doesn't matter if there is
        already a node there as the
@@ -212,7 +201,7 @@ void loop() {
    unvisited node. If the right node is being visited, then
    this branch is expended and it backs out.
    **********************************************************/
-   if(times[0] > avgTime){
+   if(times[0] < avgTime){
      if(node->left->ifVisited == false){
        turnLeft();
        goStraight();
@@ -220,21 +209,24 @@ void loop() {
        node->ifVisited = true;
      }
      else{    
-       if((times[1] > avgTime) && (node->forward->ifVisited == false)){
+       if((times[1] < avgTime) && (node->forward->ifVisited == false)){
          goStraight();
          node = node->forward;
          node->ifVisited = true;
        }
-       else if((times[2] > avgTime) && (node->right->ifVisited == false)){
+       else if((times[2] < avgTime) && (node->right->ifVisited == false)){
         turnRight();
         goStraight();
         node = node->right;
         node->ifVisited = true;
        }       
        else{
-         if(node->back->forward == node)
-         goBack();
-       else if(node->back->left == node){
+         if(node->back == NULL){
+           //no way to back up anymore
+         }
+         else if(node->back->forward == node)
+           goBack();
+         else if(node->back->left == node){
          backLeft();
          goBack();
        }
@@ -247,20 +239,23 @@ void loop() {
      }
    }
    
-   else if(times[1] > avgTime){
+   else if(times[1] < avgTime){
      if(node->forward->ifVisited == false){
       goStraight();
       node = node->forward;
       node->ifVisited = true;
      }
-     else if((times[2] > avgTime) && (node->right->ifVisited == false)){
+     else if((times[2] < avgTime) && (node->right->ifVisited == false)){
        turnRight();
        goStraight();
        node = node->right;
        node->ifVisited = true;
      }       
      else{
-       if(node->back->forward == node)
+       if(node->back == NULL){
+           //no way to back up anymore
+       }
+       else if(node->back->forward == node)
          goBack();
        else if(node->back->left == node){
          backLeft();
@@ -274,7 +269,7 @@ void loop() {
      }
    }
    
-   else if(times[2] > avgTime){
+   else if(times[2] < avgTime){
      if(node->right->ifVisited == false){
       turnRight();
       goStraight();
@@ -282,7 +277,10 @@ void loop() {
       node->ifVisited = true;
      }
      else{
-       if(node->back->forward == node)
+       if(node->back == NULL){
+           //no way to back up anymore
+       }
+       else if(node->back->forward == node)
          goBack();
        else if(node->back->left == node){
          backLeft();
@@ -300,7 +298,10 @@ void loop() {
      What do we do when there is nowhere to go?
      Check the way you came from then go back!
      ******************************************/
-     if(node->back->forward == node)
+       if(node->back == NULL){
+           //no way to back up anymore
+       }
+       else if(node->back->forward == node)
          goBack();
        else if(node->back->left == node){
          backLeft();
@@ -317,8 +318,8 @@ void loop() {
    This checks if its about to fall off the face off the
    earth, but blinking the cliff pin :D
    *********************************************************/
-   int temp = readCliff();
-   if(temp > cliffTime){
+   /*int temp = readCliff();
+   if(temp < cliffTime){
      node->forward = NULL;
      if((node->left->ifVisited == false) && (irBounce(0) > avgTime)){
        node->insert(stepCount,0);
@@ -327,7 +328,7 @@ void loop() {
        node = node->left;
        node->ifVisited = true;
      }
-     else if((times[2] > avgTime) && (node->right->ifVisited == false)){
+     else if((times[2] < avgTime) && (node->right->ifVisited == false)){
        turnRight();
        goStraight();
        node = node->right;
@@ -346,6 +347,5 @@ void loop() {
        }
        node = node->back;
      }
-   }
-  
+   }*/
 }
